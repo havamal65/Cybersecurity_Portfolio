@@ -100,7 +100,24 @@ pip install -r requirements.txt
    - macOS: Install [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
    - Linux: Install [Docker Engine](https://docs.docker.com/engine/install/)
 
-2. **Run with Docker Compose** (easiest method):
+2. **Using Helper Scripts** (easiest method):
+   - Windows: Double-click `docker-run.bat` or run from command prompt
+     ```cmd
+     docker-run.bat
+     ```
+   
+   - Linux/macOS: Make the script executable and run it
+     ```bash
+     chmod +x docker-run.sh
+     ./docker-run.sh
+     ```
+   
+   - With custom options:
+     ```bash
+     ./docker-run.sh --debug --duration 300
+     ```
+
+3. **Run with Docker Compose** (alternative method):
    ```bash
    # Build and start the simulation
    docker-compose up
@@ -112,7 +129,7 @@ pip install -r requirements.txt
    docker-compose down
    ```
 
-3. **Run with Docker** (alternative method):
+4. **Run with Docker** (advanced method):
    ```bash
    # Build the image
    docker build -t esp32-security-sim .
@@ -124,7 +141,7 @@ pip install -r requirements.txt
    docker run -p 5000:5000 esp32-security-sim --debug --duration 300
    ```
 
-4. **Access the Dashboard**:
+5. **Access the Dashboard**:
    - Open your browser and navigate to http://localhost:5000/
 
 #### Windows
