@@ -12,6 +12,7 @@ import time
 import signal
 import sys
 import json
+import webbrowser
 from pathlib import Path
 
 # Import simulation components
@@ -54,6 +55,7 @@ def parse_arguments():
     parser.add_argument('--no-ids', action='store_true', help='Disable intrusion detection')
     parser.add_argument('--config', type=str, help='Path to configuration file')
     parser.add_argument('--duration', type=int, default=0, help='Simulation duration in seconds (0 for unlimited)')
+    parser.add_argument('--no-browser', action='store_true', help='Do not automatically open browser dashboard')
     
     return parser.parse_args()
 
@@ -122,10 +124,16 @@ def main():
         ids_config = config.get('ids', {})
         IntrusionDetectionSystem(sim_engine, ids_config)
     
-    # Web dashboard
+    # Web dashboard settings
+    dashboard_url = None
     if not args.no_dashboard:
         dashboard_config = config.get('dashboard', {})
-        DashboardServer(sim_engine, dashboard_config)
+        dashboard = DashboardServer(sim_engine, dashboard_config)
+        
+        # Prepare dashboard URL
+        host = dashboard_config.get('host', '127.0.0.1')
+        port = dashboard_config.get('port', 5000)
+        dashboard_url = f"http://{host}:{port}/"
     
     # Handle termination signals
     def signal_handler(sig, frame):
@@ -140,10 +148,18 @@ def main():
     logging.info("Starting ESP32 security device simulation")
     sim_engine.start()
     
+    # Open browser if dashboard enabled and not explicitly disabled
+    if dashboard_url and not args.no_browser:
+        logging.info(f"Opening dashboard in browser: {dashboard_url}")
+        # Use a small delay to ensure the server is ready
+        time.sleep(1.5)
+        webbrowser.open(dashboard_url)
+    
     # Keep the main thread running
     try:
         print("\nESP32 Security Device Simulation is running.")
-        print("Access the dashboard at http://127.0.0.1:5000/ (default)")
+        if dashboard_url:
+            print(f"Access the dashboard at {dashboard_url}")
         print("Press Ctrl+C to stop the simulation.\n")
         
         while sim_engine.running:
