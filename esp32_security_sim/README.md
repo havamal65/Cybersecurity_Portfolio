@@ -92,6 +92,106 @@ All components are designed with a modular architecture to allow for easy extens
 pip install -r requirements.txt
 ```
 
+### Platform-Specific Installation Instructions
+
+#### Windows
+1. **Install Python**:
+   - Download and install Python 3.9+ from [python.org](https://www.python.org/downloads/windows/)
+   - Ensure you check "Add Python to PATH" during installation
+
+2. **Install Dependencies**:
+   ```
+   pip install -r requirements.txt
+   ```
+
+3. **Install Npcap for Scapy** (optional - for real packet capture):
+   - Download and install Npcap from [npcap.com](https://npcap.com/#download)
+   - Ensure you select "Install Npcap in WinPcap API-compatible Mode" during installation
+
+4. **Run the Simulation**:
+   ```
+   python main.py
+   ```
+   - If using PowerShell, you can also use:
+   ```
+   python .\main.py
+   ```
+
+5. **Access the Dashboard**:
+   - A browser window should automatically open to http://localhost:5000/
+   - If it doesn't open automatically, navigate to this URL manually
+
+#### Linux
+1. **Install Python and Dependencies**:
+   ```bash
+   sudo apt update
+   sudo apt install python3 python3-pip python3-venv
+   ```
+
+2. **Clone Repository** (if not already done):
+   ```bash
+   git clone https://github.com/havamal65/Cybersecurity_Portfolio.git
+   cd Cybersecurity_Portfolio/Cybersecurity/esp32_security_sim
+   ```
+
+3. **Create and Activate Virtual Environment** (recommended):
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+4. **Install Requirements**:
+   ```bash
+   pip3 install -r requirements.txt
+   ```
+
+5. **Install Scapy Dependencies** (for real packet capture):
+   ```bash
+   sudo apt install tcpdump
+   ```
+
+6. **Run Simulation**:
+   - Regular mode:
+   ```bash
+   python3 main.py
+   ```
+   - With elevated privileges (if using real network interfaces):
+   ```bash
+   sudo python3 main.py
+   ```
+
+7. **Access the Dashboard**:
+   - A browser window should automatically open to http://localhost:5000/
+   - If it doesn't open automatically, navigate to this URL manually
+
+#### macOS
+1. **Install Python**:
+   - Using Homebrew:
+   ```bash
+   brew install python
+   ```
+   - Or download from [python.org](https://www.python.org/downloads/macos/)
+
+2. **Install Dependencies**:
+   ```bash
+   pip3 install -r requirements.txt
+   ```
+
+3. **Install Scapy Dependencies** (for real packet capture):
+   ```bash
+   brew install libdnet
+   brew install tcpdump
+   ```
+
+4. **Run Simulation**:
+   ```bash
+   python3 main.py
+   ```
+
+5. **Access the Dashboard**:
+   - A browser window should automatically open to http://localhost:5000/
+   - If it doesn't open automatically, navigate to this URL manually
+
 ### Basic Usage
 
 ```
@@ -108,6 +208,7 @@ This will start the simulation with default settings. Once running, access the d
 - `--no-ids`: Disable intrusion detection
 - `--config PATH`: Specify a configuration file
 - `--duration SECONDS`: Set simulation duration (0 for unlimited)
+- `--no-browser`: Disable automatic opening of the dashboard in browser
 
 ### Configuration
 
