@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Security Device Simulation</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .card {
+            margin-bottom: 1rem;
+        }
+        .alert-high {
+            background-color: #f8d7da;
+        }
+        .alert-medium {
+            background-color: #fff3cd;
+        }
+        .alert-low {
+            background-color: #d1ecf1;
+        }
+        .packet-blocked {
+            background-color: #f8d7da;
+        }
+        .packet-allowed {
+            background-color: #d4edda;
+        }
+        .attack-row {
+            background-color: #f8d7da;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">ESP32 Security Device Simulation</h1>
+        
+        <div class="row">
+            <!-- Status Card -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Device Status</div>
+                    <div class="card-body">
+                        <p><strong>Status:</strong> <span id="status">Loading...</span></p>
+                        <p><strong>Uptime:</strong> <span id="uptime">--</span> seconds</p>
+                        <p><strong>MAC Address:</strong> <span id="mac-address">--</span></p>
+                        <p><strong>Attack Status:</strong> <span id="attack-status">No attack</span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Stats Card -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Security Statistics</div>
+                    <div class="card-body">
+                        <p><strong>Firewall Blocked:</strong> <span id="firewall-blocked">0</span> packets</p>
+                        <p><strong>Encryption Performance:</strong> <span id="encryption-performance">--</span> ms/packet</p>
+                        <p><strong>Active Alerts:</strong> <span id="active-alerts">0</span></p>
+                        <p><strong>Default Policy:</strong> <span id="default-policy">--</span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions Card -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Actions</div>
+                    <div class="card-body">
+                        <button id="btn-rotate-mac" class="btn btn-primary mb-2 w-100">Rotate MAC Address</button>
+                        <button id="btn-toggle-ids" class="btn btn-secondary mb-2 w-100">Toggle IDS</button>
+                        <button id="btn-clear-alerts" class="btn btn-warning mb-2 w-100">Clear Alerts</button>
+                        <button id="btn-toggle-firewall" class="btn btn-info w-100">Toggle Firewall Policy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <!-- Recent Packets -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Recent Network Traffic</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Packet</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-packets">
+                                    <!-- Packets will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Alerts -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Security Alerts</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Alert</th>
+                                        <th>Severity</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="security-alerts">
+                                    <!-- Alerts will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <!-- Firewall Rules -->
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">Firewall Rules</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Protocol</th>
+                                        <th>Source</th>
+                                        <th>Destination</th>
+                                        <th>Port</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="firewall-rules">
+                                    <!-- Rules will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Refresh data every 1 second
+        setInterval(updateDashboard, 1000);
+        
+        function updateDashboard() {
+            // Update status
+            $.getJSON('/api/status', function(data) {
+                $('#status').text(data.status);
+                $('#uptime').text(data.uptime.toFixed(1));
+            });
+            
+            // Update network data
+            $.getJSON('/api/network', function(data) {
+                $('#recent-packets').empty();
+                
+                data.recent_packets.forEach(function(packet) {
+                    var statusClass = '';
+                    var statusText = 'Unknown';
+                    
+                    if (packet.firewall_action === 'block') {
+                        statusClass = 'packet-blocked';
+                        statusText = 'Blocked: ' + packet.firewall_reason;
+                    } else if (packet.firewall_action === 'allow') {
+                        statusClass = 'packet-allowed';
+                        statusText = 'Allowed';
+                    }
+                    
+                    var rowClass = packet.is_attack ? 'attack-row' : '';
+                    
+                    var row = $('<tr>')
+                        .addClass(rowClass)
+                        .addClass(statusClass)
+                        .append($('<td>').text(new Date(packet.timestamp).toLocaleTimeString()))
+                        .append($('<td>').text(packet.summary))
+                        .append($('<td>').text(statusText));
+                    
+                    $('#recent-packets').prepend(row);
+                });
+                
+                // Update attack status
+                if (data.attack_in_progress) {
+                    $('#attack-status').text('ACTIVE: ' + data.attack_type).addClass('text-danger');
+                } else {
+                    $('#attack-status').text('No attack').removeClass('text-danger');
+                }
+            });
+            
+            // Update security data
+            $.getJSON('/api/security', function(data) {
+                // MAC address
+                if (data.mac_address) {
+                    $('#mac-address').text(data.mac_address);
+                }
+                
+                // Firewall stats
+                if (data.firewall) {
+                    $('#firewall-blocked').text(data.firewall.total_blocked_packets);
+                    $('#default-policy').text(data.firewall.default_policy);
+                }
+                
+                // Encryption stats
+                if (data.encryption) {
+                    $('#encryption-performance').text(data.encryption.average_encryption_time_ms.toFixed(2));
+                }
+            });
+            
+            // Update alerts
+            $.getJSON('/api/alerts', function(data) {
+                $('#security-alerts').empty();
+                
+                data.alerts.forEach(function(alert) {
+                    var severityClass = '';
+                    if (alert.severity === 'high') {
+                        severityClass = 'alert-high';
+                    } else if (alert.severity === 'medium') {
+                        severityClass = 'alert-medium';
+                    } else if (alert.severity === 'low') {
+                        severityClass = 'alert-low';
+                    }
+                    
+                    var row = $('<tr>')
+                        .addClass(severityClass)
+                        .append($('<td>').text(new Date(alert.timestamp).toLocaleTimeString()))
+                        .append($('<td>').text(alert.name))
+                        .append($('<td>').text(alert.severity))
+                        .append($('<td>').text((alert.confidence * 100).toFixed(0) + '%'));
+                    
+                    $('#security-alerts').prepend(row);
+                });
+                
+                $('#active-alerts').text(data.alerts.length);
+            });
+            
+            // Update firewall rules
+            $.getJSON('/api/config', function(data) {
+                $('#firewall-rules').empty();
+                
+                if (data.firewall && data.firewall.rules) {
+                    data.firewall.rules.forEach(function(rule, index) {
+                        var protocol = rule.protocol || 'any';
+                        var source = rule.src_ip || 'any';
+                        var destination = rule.dst_ip || 'any';
+                        var port = '';
+                        if (rule.dst_port) {
+                            port = rule.dst_port;
+                        } else if (rule.src_port) {
+                            port = rule.src_port + ' (src)';
+                        } else {
+                            port = 'any';
+                        }
+                        
+                        var actionClass = rule.action === 'block' ? 'text-danger' : 'text-success';
+                        
+                        var row = $('<tr>')
+                            .append($('<td>').text(index + 1))
+                            .append($('<td>').text(protocol))
+                            .append($('<td>').text(source))
+                            .append($('<td>').text(destination))
+                            .append($('<td>').text(port))
+                            .append($('<td>').addClass(actionClass).text(rule.action));
+                        
+                        $('#firewall-rules').append(row);
+                    });
+                }
+            });
+        }
+        
+        // Button event handlers
+        $('#btn-rotate-mac').click(function() {
+            $.post('/api/config', JSON.stringify({
+                'rotate_mac': true
+            }), function() {
+                alert('MAC address rotation requested');
+            }, 'json');
+        });
+        
+        $('#btn-toggle-ids').click(function() {
+            $.getJSON('/api/config', function(data) {
+                var idsEnabled = data.ids.signature_detection && data.ids.anomaly_detection;
+                
+                $.post('/api/config', JSON.stringify({
+                    'ids': {
+                        'signature_detection': !idsEnabled,
+                        'anomaly_detection': !idsEnabled
+                    }
+                }), function() {
+                    alert('IDS ' + (idsEnabled ? 'disabled' : 'enabled'));
+                }, 'json');
+            });
+        });
+        
+        $('#btn-clear-alerts').click(function() {
+            $.post('/api/config', JSON.stringify({
+                'clear_alerts': true
+            }), function() {
+                alert('Alerts cleared');
+            }, 'json');
+        });
+        
+        $('#btn-toggle-firewall').click(function() {
+            $.getJSON('/api/config', function(data) {
+                var currentPolicy = data.firewall.default_policy;
+                var newPolicy = currentPolicy === 'allow' ? 'block' : 'allow';
+                
+                $.post('/api/config', JSON.stringify({
+                    'firewall': {
+                        'default_policy': newPolicy
+                    }
+                }), function() {
+                    alert('Firewall default policy changed to: ' + newPolicy);
+                }, 'json');
+            });
+        });
+    </script>
+</body>
+</html>

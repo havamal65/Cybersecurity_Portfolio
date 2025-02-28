@@ -1,0 +1,17 @@
+# Networking and simulation
+scapy==2.5.0
+
+# Security
+cryptography==41.0.1
+
+# Web dashboard
+flask==2.3.2
+plotly==5.15.0
+pandas==2.0.3
+
+# Testing
+pytest==7.4.0
+
+# Development
+black==23.3.0
+isort==5.12.0 

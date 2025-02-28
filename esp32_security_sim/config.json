@@ -1,0 +1,64 @@
+{
+  "engine": {
+    "simulation_speed": 1.0,
+    "max_duration": 0,
+    "log_level": "INFO"
+  },
+  "network": {
+    "normal_traffic_rate": 15,
+    "attack_probability": 0.05,
+    "local_network": "192.168.1.0/24",
+    "internet_hosts": [
+      "8.8.8.8",
+      "1.1.1.1",
+      "93.184.216.34",
+      "172.217.169.78",
+      "104.244.42.65"
+    ]
+  },
+  "firewall": {
+    "default_policy": "allow",
+    "rules": [
+      {"protocol": "tcp", "dst_port": 22, "src_ip": "external", "action": "block", "description": "Block incoming SSH"},
+      {"protocol": "tcp", "dst_port": 23, "action": "block", "description": "Block Telnet"},
+      {"protocol": "tcp", "dst_port": 80, "action": "allow", "description": "Allow HTTP"},
+      {"protocol": "tcp", "dst_port": 443, "action": "allow", "description": "Allow HTTPS"},
+      {"protocol": "udp", "dst_port": 53, "action": "allow", "description": "Allow DNS"}
+    ],
+    "log_blocked": true,
+    "log_allowed": false,
+    "rate_limiting": {
+      "enabled": true,
+      "max_connections": 50,
+      "window": 60
+    }
+  },
+  "mac_randomizer": {
+    "randomization_interval": 300,
+    "oui_list": [
+      "00:11:22",
+      "DC:A6:32",
+      "C8:3A:35",
+      "0C:B8:15"
+    ]
+  },
+  "encryption": {
+    "key_rotation_interval": 3600,
+    "cipher_algorithm": "AES",
+    "key_size": 256,
+    "use_hardware_acceleration": true
+  },
+  "ids": {
+    "signature_detection": true,
+    "anomaly_detection": true,
+    "log_detections": true,
+    "alert_threshold": 0.7,
+    "detection_interval": 5
+  },
+  "dashboard": {
+    "host": "127.0.0.1",
+    "port": 5000,
+    "debug": false,
+    "update_interval": 1.0
+  }
+}
