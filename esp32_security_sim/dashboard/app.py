@@ -1,7 +1,7 @@
 import logging
 import json
 from datetime import datetime
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, Response
 import threading
 import time
 
@@ -63,6 +63,26 @@ class DashboardServer:
         def index():
             """Render the main dashboard page."""
             return render_template('index.html')
+        
+        @app.route('/api/test', methods=['GET', 'POST'])
+        def test():
+            """Simple test endpoint to verify API connectivity."""
+            if request.method == 'POST':
+                logger.info(f"Test POST received. Headers: {dict(request.headers)}")
+                logger.info(f"Test POST data: {request.data}")
+                try:
+                    # Try to parse as JSON
+                    if request.is_json:
+                        data = request.get_json()
+                    else:
+                        data = json.loads(request.data.decode('utf-8'))
+                    logger.info(f"Test POST parsed JSON: {data}")
+                    return jsonify({"status": "success", "received": data})
+                except Exception as e:
+                    logger.error(f"Error parsing test data: {e}")
+                    return jsonify({"status": "error", "message": str(e)})
+            else:
+                return jsonify({"status": "success", "message": "API test endpoint is working"})
         
         @app.route('/api/status')
         def status():
@@ -165,36 +185,86 @@ class DashboardServer:
         def config():
             """Get or update simulation configuration."""
             if request.method == 'POST':
-                # Update configuration
-                config_data = request.json
-                
-                # Update firewall rules if provided
-                if 'firewall_rules' in config_data and 'firewall' in self.engine.components:
-                    firewall = self.engine.components['firewall']
+                try:
+                    # Log the raw request for debugging
+                    logger.info(f"Received POST to /api/config. Headers: {dict(request.headers)}")
+                    logger.info(f"Raw request data: {request.data}")
+
+                    # Extract the data from the request
+                    config_data = None
                     
-                    # Replace rules
-                    firewall.config['rules'] = config_data['firewall_rules']
-                    logger.info(f"Updated firewall rules: {len(firewall.config['rules'])} rules")
-                
-                # Toggle IDS if requested
-                if 'ids' in config_data and 'ids' in self.engine.components:
-                    ids = self.engine.components['ids']
-                    if 'signature_detection' in config_data['ids']:
-                        ids.config['signature_detection'] = config_data['ids']['signature_detection']
-                    if 'anomaly_detection' in config_data['ids']:
-                        ids.config['anomaly_detection'] = config_data['ids']['anomaly_detection']
-                
-                # Rotate MAC address if requested
-                if config_data.get('rotate_mac', False) and 'mac_randomizer' in self.engine.components:
-                    mac_randomizer = self.engine.components['mac_randomizer']
-                    mac_randomizer.randomize_now()
-                
-                # Clear alerts if requested
-                if config_data.get('clear_alerts', False) and 'ids' in self.engine.components:
-                    ids = self.engine.components['ids']
-                    ids.clear_alerts()
-                
-                return jsonify({'status': 'success'})
+                    # Try multiple parsing methods
+                    if request.is_json:
+                        config_data = request.get_json(force=True)
+                        logger.info("Parsed request as JSON using get_json()")
+                    elif request.form:
+                        # Form data
+                        config_data = {k: v for k, v in request.form.items()}
+                        logger.info("Parsed request as form data")
+                    elif request.data:
+                        # Raw data - try to parse as JSON
+                        try:
+                            config_data = json.loads(request.data.decode('utf-8'))
+                            logger.info("Parsed request data as JSON manually")
+                        except:
+                            # If not valid JSON, try to parse as a query string
+                            try:
+                                from urllib.parse import parse_qs
+                                parsed = parse_qs(request.data.decode('utf-8'))
+                                config_data = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
+                                logger.info("Parsed request as query string")
+                            except:
+                                logger.error("Could not parse request data in any format")
+                                return jsonify({'status': 'error', 'message': 'Invalid request format'}), 400
+                    
+                    if not config_data:
+                        logger.error("No config data could be extracted from the request")
+                        return jsonify({'status': 'error', 'message': 'No configuration data provided'}), 400
+                    
+                    logger.info(f"Parsed configuration update: {config_data}")
+                    
+                    # Toggle firewall policy if requested
+                    if 'firewall' in config_data and isinstance(config_data['firewall'], dict) and 'default_policy' in config_data['firewall'] and 'firewall' in self.engine.components:
+                        firewall = self.engine.components['firewall']
+                        new_policy = config_data['firewall']['default_policy']
+                        if new_policy in ['allow', 'block']:
+                            firewall.config['default_policy'] = new_policy
+                            logger.info(f"Updated firewall default policy to: {new_policy}")
+                    
+                    # Update firewall rules if provided
+                    if 'firewall_rules' in config_data and 'firewall' in self.engine.components:
+                        firewall = self.engine.components['firewall']
+                        
+                        # Replace rules
+                        firewall.config['rules'] = config_data['firewall_rules']
+                        logger.info(f"Updated firewall rules: {len(firewall.config['rules'])} rules")
+                    
+                    # Toggle IDS if requested
+                    if 'ids' in config_data and isinstance(config_data['ids'], dict) and 'ids' in self.engine.components:
+                        ids = self.engine.components['ids']
+                        if 'signature_detection' in config_data['ids']:
+                            ids.config['signature_detection'] = config_data['ids']['signature_detection']
+                            logger.info(f"Updated IDS signature detection to: {ids.config['signature_detection']}")
+                        if 'anomaly_detection' in config_data['ids']:
+                            ids.config['anomaly_detection'] = config_data['ids']['anomaly_detection']
+                            logger.info(f"Updated IDS anomaly detection to: {ids.config['anomaly_detection']}")
+                    
+                    # Rotate MAC address if requested
+                    if config_data.get('rotate_mac', False) and 'mac_randomizer' in self.engine.components:
+                        mac_randomizer = self.engine.components['mac_randomizer']
+                        new_mac = mac_randomizer.randomize_now()
+                        logger.info(f"MAC address manually rotated to: {new_mac}")
+                    
+                    # Clear alerts if requested
+                    if config_data.get('clear_alerts', False) and 'ids' in self.engine.components:
+                        ids = self.engine.components['ids']
+                        ids.clear_alerts()
+                        logger.info("Security alerts cleared")
+                    
+                    return jsonify({'status': 'success'})
+                except Exception as e:
+                    logger.error(f"Error processing configuration update: {e}", exc_info=True)
+                    return jsonify({'status': 'error', 'message': str(e)}), 400
             else:
                 # Return current configuration
                 config_data = {}
@@ -225,6 +295,19 @@ class DashboardServer:
                     }
                 
                 return jsonify(config_data)
+        
+        # Add CORS headers to all responses
+        @app.after_request
+        def add_cors_headers(response):
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+            response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+            return response
+        
+        # Handle OPTIONS requests
+        @app.route('/api/config', methods=['OPTIONS'])
+        def options():
+            return Response('', 204)
     
     def start_server(self):
         """Start the Flask server in a separate thread."""
@@ -249,17 +332,16 @@ class DashboardServer:
     
     def update(self, cycle):
         """
-        Update the dashboard server for the current cycle.
+        Update the dashboard for the current cycle.
         
         Args:
             cycle (int): Current simulation cycle
         """
-        # Nothing to do here as Flask handles requests asynchronously
+        # No update required, the dashboard will pull data from the API
         pass
     
     def shutdown(self):
         """Shut down the dashboard server."""
-        # Flask doesn't have a clean shutdown mechanism when run in a thread
-        # In a real implementation, you would use a more robust approach
-        self.running = False
         logger.info("Dashboard server shutting down")
+        # No explicit shutdown required for Flask in a thread
+        self.running = False
