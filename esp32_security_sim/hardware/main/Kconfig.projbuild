@@ -1,0 +1,144 @@
+menu "ESP32 Security Device Configuration"
+
+    config SECURITY_WIFI_SSID
+        string "WiFi SSID"
+        default "myssid"
+        help
+            SSID (network name) to connect to when not in promiscuous mode.
+
+    config SECURITY_WIFI_PASSWORD
+        string "WiFi Password"
+        default "mypassword"
+        help
+            WiFi password when connecting to the network.
+
+    config SECURITY_PROMISCUOUS_CHANNEL
+        int "WiFi Channel for Promiscuous Mode"
+        default 1
+        range 1 14
+        help
+            WiFi channel to monitor in promiscuous mode.
+
+    config SECURITY_LOG_TO_SDCARD
+        bool "Log to SD Card"
+        default y
+        help
+            Enable logging to SD card for permanent storage.
+
+    config SECURITY_SDCARD_MOUNT_POINT
+        string "SD Card Mount Point"
+        default "/sdcard"
+        depends on SECURITY_LOG_TO_SDCARD
+        help
+            Mount point for the SD card in the virtual filesystem.
+
+    config SECURITY_MAX_PACKETS_QUEUE
+        int "Maximum Packets in Queue"
+        default 128
+        range 32 512
+        help
+            Maximum number of packets to queue for analysis.
+
+    config SECURITY_BLOCK_BY_DEFAULT
+        bool "Block Packets by Default"
+        default n
+        help
+            If enabled, packets will be blocked unless explicitly allowed by rules.
+            If disabled, packets will be allowed unless explicitly blocked by rules.
+
+    config SECURITY_ENABLE_IDS
+        bool "Enable Intrusion Detection"
+        default y
+        help
+            Enable the Intrusion Detection System.
+
+    config SECURITY_STATS_INTERVAL_SEC
+        int "Statistics Reporting Interval (seconds)"
+        default 10
+        range 1 3600
+        help
+            Interval in seconds between statistics reports.
+
+    config SECURITY_ENABLE_DASHBOARD
+        bool "Enable Web Dashboard"
+        default y
+        help
+            Enable the web-based dashboard for monitoring and configuration.
+
+    config SECURITY_DASHBOARD_PORT
+        int "Dashboard Web Server Port"
+        default 80
+        range 1 65535
+        depends on SECURITY_ENABLE_DASHBOARD
+        help
+            Port for the web dashboard server.
+
+    config SECURITY_DASHBOARD_USERNAME
+        string "Dashboard Username"
+        default "admin"
+        depends on SECURITY_ENABLE_DASHBOARD
+        help
+            Username for dashboard authentication.
+
+    config SECURITY_DASHBOARD_PASSWORD
+        string "Dashboard Password"
+        default "admin"
+        depends on SECURITY_ENABLE_DASHBOARD
+        help
+            Password for dashboard authentication.
+
+    menu "Wireshark Integration"
+        depends on SECURITY_LOG_TO_SDCARD
+
+        config SECURITY_ENABLE_PCAP
+            bool "Enable PCAP Capture"
+            default y
+            help
+                Enable packet capture in PCAP format for Wireshark analysis.
+
+        config SECURITY_PCAP_FILENAME_PREFIX
+            string "PCAP Filename Prefix"
+            default "esp_capture_"
+            depends on SECURITY_ENABLE_PCAP
+            help
+                Prefix for PCAP capture filenames. Files will be named prefix_YYYYMMDD_HHMMSS.pcap
+
+        config SECURITY_PCAP_MAX_FILE_SIZE_MB
+            int "Maximum PCAP File Size (MB)"
+            default 10
+            range 1 100
+            depends on SECURITY_ENABLE_PCAP
+            help
+                Maximum size of each PCAP file before rotating to a new file.
+
+        config SECURITY_PCAP_MAX_FILES
+            int "Maximum Number of PCAP Files"
+            default 5
+            range 1 50
+            depends on SECURITY_ENABLE_PCAP
+            help
+                Maximum number of PCAP files to keep before deleting oldest.
+
+        config SECURITY_ENABLE_WIRESHARK_STREAMING
+            bool "Enable Wireshark Streaming"
+            default n
+            help
+                Enable real-time streaming of packets to Wireshark.
+
+        config SECURITY_WIRESHARK_STREAMING_PORT
+            int "Wireshark Streaming Port"
+            default 5555
+            range 1024 65535
+            depends on SECURITY_ENABLE_WIRESHARK_STREAMING
+            help
+                UDP port for Wireshark streaming.
+
+        config SECURITY_WIRESHARK_STREAMING_IP
+            string "Wireshark Streaming IP (optional)"
+            default ""
+            depends on SECURITY_ENABLE_WIRESHARK_STREAMING
+            help
+                IP address for Wireshark streaming. Leave empty for broadcast.
+    endmenu
+
+endmenu 

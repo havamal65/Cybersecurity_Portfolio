@@ -1,0 +1,12 @@
+idf_component_register(
+    SRCS 
+        "esp_pcap.c"
+    INCLUDE_DIRS 
+        "include"
+    REQUIRES 
+        nvs_flash
+        fatfs
+        sdmmc
+        esp_wifi
+        lwip
+) 

@@ -200,3 +200,16 @@ To transform this into a real security device, we will need:
 Transforming our ESP32 security simulation into a real security device represents a significant but achievable technical challenge. By focusing on specific use cases, optimizing for the hardware constraints, and implementing a phased approach, we can create a functional security device with practical applications in home, small business, and educational environments.
 
 This project will not aim to replace enterprise security solutions but instead will provide a cost-effective, educational, and practical security monitoring option for environments where commercial solutions may be overkill or cost-prohibitive. 
+
+idf_component_register(
+    SRCS 
+        "packet_capture.c"
+    INCLUDE_DIRS 
+        "include"
+    REQUIRES 
+        nvs_flash
+        esp_wifi
+        esp_event
+        lwip
+        esp_pcap    # Add this new dependency
+) 
