@@ -94,6 +94,39 @@ pip install -r requirements.txt
 
 ### Platform-Specific Installation Instructions
 
+#### Docker (Recommended for All Platforms)
+1. **Install Docker**:
+   - Windows: Install [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop)
+   - macOS: Install [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
+   - Linux: Install [Docker Engine](https://docs.docker.com/engine/install/)
+
+2. **Run with Docker Compose** (easiest method):
+   ```bash
+   # Build and start the simulation
+   docker-compose up
+   
+   # Or run in detached mode
+   docker-compose up -d
+   
+   # Stop the simulation
+   docker-compose down
+   ```
+
+3. **Run with Docker** (alternative method):
+   ```bash
+   # Build the image
+   docker build -t esp32-security-sim .
+   
+   # Run the container with default options
+   docker run -p 5000:5000 esp32-security-sim
+   
+   # Run with custom command-line options
+   docker run -p 5000:5000 esp32-security-sim --debug --duration 300
+   ```
+
+4. **Access the Dashboard**:
+   - Open your browser and navigate to http://localhost:5000/
+
 #### Windows
 1. **Install Python**:
    - Download and install Python 3.9+ from [python.org](https://www.python.org/downloads/windows/)

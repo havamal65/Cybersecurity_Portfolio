@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  esp32-security-sim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./logs:/app/logs
+      - ./config.json:/app/config.json
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["--debug"]  # Optional: add default command-line arguments
+    # For more command line args, you can override at runtime:
+    # e.g., docker-compose run --rm esp32-security-sim --no-network --duration 300 
